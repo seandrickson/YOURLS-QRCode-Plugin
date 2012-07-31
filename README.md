@@ -11,7 +11,7 @@ Move the `qrcode` folder into the `/users/plugins` folder. Then, activate the pl
 Requirements
 ------------
 
-User must have a nightly after 7-30-2012 installed. 
+User must have a YOURLS 1.5+ nightly installed. You can either [install from SVN](http://code.google.com/p/yourls/wiki/InstallFromSVN), or [download and install a zip archive](http://yourls.org/nightly-builds/).
 
 Credits
 -------
