@@ -6,7 +6,7 @@ Allows you to get the QR code by simply clicking on a button in the Admin area (
 Installation
 ------------
 
-Move the "qrcode" folder into the "users/plugins" folder. Then, activate the plugin in the admin interface. That's all there is to it.
+Move the `qrcode` folder into the `/users/plugins` folder. Then, activate the plugin in the admin interface. That's all there is to it.
 
 Requirements
 ------------
