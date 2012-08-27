@@ -18,4 +18,4 @@ Credits
 
 Main functionality of adding a QR code is borrowed from [Ozh's orginal plugin code](http://code.google.com/p/yourls/wiki/PluginQRCodeShortURL).
 
-QR code generation made possible by [PHP QR Code](http://github.com/intern/PHP-QR-Code).
+QR code generation made possible by [Google Chart Tools](https://developers.google.com/chart/).
