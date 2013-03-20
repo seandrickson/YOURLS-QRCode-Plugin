@@ -11,11 +11,11 @@ Move the `qrcode` folder into the `/users/plugins` folder. Then, activate the pl
 Requirements
 ------------
 
-User must have a YOURLS 1.5+ nightly installed. You can either [install from SVN](http://code.google.com/p/yourls/wiki/InstallFromSVN), or [download and install a zip archive](http://yourls.org/nightly-builds/).
+User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed.
 
 Credits
 -------
 
 Main functionality of adding a QR code is borrowed from [Ozh's orginal plugin code](http://code.google.com/p/yourls/wiki/PluginQRCodeShortURL).
 
-QR code generation made possible by [Google Chart Tools](https://developers.google.com/chart/).
+QR code generation made possible by [PHP QR Code](http://phpqrcode.sourceforge.net/) (Google's own QR Code generation will be depreciated).
