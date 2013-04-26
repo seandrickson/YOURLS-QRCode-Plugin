@@ -16,6 +16,6 @@ User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed.
 Credits
 -------
 
-Main functionality of adding a QR code is borrowed from [Ozh's orginal plugin code](http://code.google.com/p/yourls/wiki/PluginQRCodeShortURL).
+Main functionality of adding a QR code is borrowed from [Ozh's orginal plugin code](https://github.com/YOURLS/YOURLS/wiki/Plugin-%3D-QRCode-ShortURL).
 
-QR code generation made possible by [PHP QR Code](http://phpqrcode.sourceforge.net/) (Google's own QR Code generation will be depreciated).
+QR code generation made possible by [PHP QR Code](http://phpqrcode.sourceforge.net/) (Google's own QR Code generation, through the Chart Image API [is depreciated](http://googledevelopers.blogspot.com/2012/04/changes-to-deprecation-policies-and-api.html) and will no longer be developed).
