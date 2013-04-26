@@ -1,7 +1,7 @@
 <?php /*
-Plugin Name: QR Code Short URLs
+Plugin Name: Sean's QR Code Short URLs
 Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
-Description: Add .qr to shorturls to display QR Code
+Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding ".qr" to the end of the keyword.)
 Version: 1.0
 Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
