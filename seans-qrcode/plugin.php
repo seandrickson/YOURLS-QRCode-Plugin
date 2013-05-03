@@ -8,6 +8,10 @@ Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
 */
 
+// No direct call
+if( !defined( 'YOURLS_ABSPATH' ) ) die();
+
+
 //include qrcode library
 require_once( dirname(__FILE__).'/phpqrcode.php' );
 
