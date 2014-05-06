@@ -15,6 +15,8 @@ User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed.
 
 **WARNING**: Does not work with YOURLS 1.6.
 
+In addition to the [server requirements of YOURLS](http://yourls.org/#requirement), make sure you follow the [server requirements of PHP QR Code library](http://sourceforge.net/p/phpqrcode/code/HEAD/tree/branches/www/1.1.4/INSTALL).
+
 Bonus
 -----
 
