@@ -25,7 +25,7 @@ function sean_yourls_qrcode( $request ) {
 	$outfile = false;
 
 	// error correction level (constants, don't use quotes):
-	$level = QR_ECLEVEL_L; // QR_ECLEVEL_L, QR_ECLEVEL_M, QR_ECLEVEL_Q or QR_ECLEVEL_H
+	$level = QR_ECLEVEL_H; // QR_ECLEVEL_L, QR_ECLEVEL_M, QR_ECLEVEL_Q or QR_ECLEVEL_H
 
 	// pixel size multiplier (3 = 3x3 pixels for QR):
 	$size = 3;
@@ -63,9 +63,31 @@ function sean_yourls_qrcode( $request ) {
 				$url = strtoupper( $url );
 			}
 
-			// Show the QR code then!
+			// Process logo into the QR code
+                        //QRcode::png( $url, $outfile, $level, $size, $margin, $saveandprint );
+                        ob_start();
 			QRcode::png( $url, $outfile, $level, $size, $margin, $saveandprint );
-			exit;
+			$qr_src  = imagecreatefromstring(ob_get_contents());
+			list($qr_src_w, $qr_src_h) = getimagesizefromstring(ob_get_contents());
+			ob_end_clean();
+
+			// Define logo size in QR code image
+			$qr_logo_w = 24;
+			$qr_logo_h = 24;
+
+			$qr_logo = imagecreatetruecolor($qr_logo_w, $qr_logo_h);
+			list($logo_w, $logo_h) = getimagesize(dirname(__FILE__).'/logo.png');
+			imagecopyresampled($qr_logo, imagecreatefrompng(dirname(__FILE__).'/logo.png'), 0, 0, 0, 0, $qr_logo_w, $qr_logo_h, $logo_w, $logo_h);
+
+			// Merge logo to QR code
+			imagecopymerge($qr_src, $qr_logo, ($qr_src_w - $qr_logo_w)/2, ($qr_src_h - $qr_logo_h)/2, 0, 0, $qr_logo_w, $qr_logo_h, 100);
+
+                        // Show the QR code then!
+                        header('Content-Type: image/png');
+			imagepng($qr_src);
+			imagedestroy($qr_src);
+			imagedestroy($qr_logo);
+                        exit;
 		}
 	}
 }
