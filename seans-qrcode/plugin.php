@@ -11,6 +11,21 @@ Author URI: https://github.com/seandrickson
 // No direct call
 if( !defined( 'YOURLS_ABSPATH' ) ) die();
 
+/**
+ * The following configuration constants can be overridden
+ * by defining them in user/config.php
+ */
+// width of image in pixels. Will be approximate for png
+defined('SEAN_QR_WIDTH') or define('SEAN_QR_WIDTH', 200);
+
+// should we include a QR code in the share boxes
+defined('SEAN_QR_ADD_TO_SHAREBOX') or define('SEAN_QR_ADD_TO_SHAREBOX', true);
+
+// format of image. 'svg' for SVG, otherwise it will by PNG
+defined('SEAN_QR_FMT') or define('SEAN_QR_FMT', 'png');
+
+// outside margin of QR code in 'virtual' pixels:
+defined('SEAN_QR_MARGIN') or define('SEAN_QR_MARGIN', 2);
 
 //include qrcode library
 require_once( dirname(__FILE__).'/phpqrcode.php' );
@@ -24,19 +39,11 @@ function sean_yourls_qrcode( $request ) {
 	// output file name, if false outputs to browser with required headers:
 	$outfile = false;
 
-	// error correction level (constants, don't use quotes):
-	$level = QR_ECLEVEL_L; // QR_ECLEVEL_L, QR_ECLEVEL_M, QR_ECLEVEL_Q or QR_ECLEVEL_H
-
-	// pixel size multiplier (3 = 3x3 pixels for QR):
-	$size = 3;
-
-	// outside margin in 'virtual' pixels:
-	$margin = 4;
-
-	// if true code is outputed to browser and saved to file,
-	// otherwise only saved to file.
-	// It is effective only if $outfile is specified.
-	$saveandprint = false;
+	// Error correction level. Constants - do not use quotes!
+	// One of QR_ECLEVEL_L, QR_ECLEVEL_M, QR_ECLEVEL_Q or QR_ECLEVEL_H
+	// NB this can not be defined as a constant in user/config.php because 
+	// the QR_ECLEVEL_* constants haven't been defined at that point!!
+	$level = QR_ECLEVEL_L;
 
 	// --- END configurable variables ---
 
@@ -64,7 +71,15 @@ function sean_yourls_qrcode( $request ) {
 			}
 
 			// Show the QR code then!
-			QRcode::png( $url, $outfile, $level, $size, $margin, $saveandprint );
+			if(SEAN_QR_FMT == 'svg') {
+				header('Content-type: image/svg+xml');
+				echo QRcode::svg($url, false, $outfile, $level, SEAN_QR_WIDTH, false, SEAN_QR_MARGIN);
+			} else {
+				// crudely estimate the value of $size needed to get a png somewhere near
+				// SEAN_QR_WIDTH. We assume version 2 QR (ie 25x25)
+				$size = floor(SEAN_QR_WIDTH/(25+(2*SEAN_QR_MARGIN)));
+				QRcode::png( $url, $outfile, $level, $size, SEAN_QR_MARGIN );
+			}
 			exit;
 		}
 	}
@@ -114,7 +129,48 @@ function sean_add_qrcode_css_head( $context ) {
 		background: url(data:image/png;base64,R0lGODlhEAAQAIAAAAAAAP///yH5BAAAAAAALAAAAAAQABAAAAIvjI9pwIztAjjTzYWr1FrS923NAymYSV3borJW26KdaHnr6UUxd4fqL0qNbD2UqQAAOw==) no-repeat 2px 50%;
 	}
 </style>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+   $('.button_qrcode').click(function() {
+     var NWin = window.open($(this).prop('href'), '', 'scrollbars=0,location=0,height=<?php echo SEAN_QR_WIDTH ?>,width=<?php echo SEAN_QR_WIDTH ?>');
+     if (window.focus)
+     {
+       NWin.focus();
+     }
+     return false;
+    });
+});
+<?php
+			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
+function sean_toggle_qr(id) {
+    var shorturl = $('#keyword-'+id+' a:first').attr('href').replace(/^http(s)?:\/\//, "//");
+    $('#sean_qr_img').attr( 'src', shorturl + '.qr' );
+}
+<?php			endif; ?>
+</script>
 <?php
 		endif;
 	endforeach;
+}
+
+/* Displaying QR code in share box */
+if (SEAN_QR_ADD_TO_SHAREBOX) {
+    yourls_add_action( 'shareboxes_after', 'sean_add_qr_div');
+    yourls_add_filter('table_add_row_action_array', 'sean_change_share_action');
+}
+
+function sean_add_qr_div($args) {
+?>
+<div id="sean_qr_box" class="share">
+<h2>QR</h2>
+<img src="<?php echo !empty($args[1])?$args[1] . '.qr':'' ?>" id="sean_qr_img" alt="QR code" width="75px" />
+</div>
+<?php
+}
+
+
+function sean_change_share_action($actions) {
+    $id = substr($actions['share']['id'],13);
+    $actions['share']['onclick'] = "toggle_share('$id');sean_toggle_qr('$id');return false;";
+    return $actions;
 }
