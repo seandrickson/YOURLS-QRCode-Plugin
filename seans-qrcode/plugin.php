@@ -139,9 +139,22 @@ jQuery(document).ready(function($) {
      }
      return false;
     });
+    $('#main_table tbody').on("update", function() {
+        $('#main_table tbody tr:first td .button_qrcode').off("click").on("click", function() {
+           var NWin = window.open($(this).prop('href'), '', 'scrollbars=0,location=0,height=<?php echo SEAN_QR_WIDTH ?>,width=<?php echo SEAN_QR_WIDTH ?>');
+           if (window.focus) {
+             NWin.focus();
+           }
+           return false;
+        });
+<?php			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
+        var shorturl = $('#main_table tbody tr:first td.keyword a:first').attr('href').replace(/^http(s)?:\/\//, "//");
+        $('#sean_qr_img').attr( 'src', shorturl + '.qr' );
+<?php			endif; ?>
+    });
+
 });
-<?php
-			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
+<?php			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
 function sean_toggle_qr(id) {
     var shorturl = $('#keyword-'+id+' a:first').attr('href').replace(/^http(s)?:\/\//, "//");
     $('#sean_qr_img').attr( 'src', shorturl + '.qr' );
