@@ -131,35 +131,35 @@ function sean_add_qrcode_css_head( $context ) {
 </style>
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-   $('.button_qrcode').click(function() {
-     var NWin = window.open($(this).prop('href'), '', 'scrollbars=0,location=0,height=<?php echo SEAN_QR_WIDTH ?>,width=<?php echo SEAN_QR_WIDTH ?>');
-     if (window.focus)
-     {
-       NWin.focus();
-     }
-     return false;
-    });
+   sean_add_qr_popup($('.button_qrcode'));
     $('#main_table tbody').on("update", function() {
-        $('#main_table tbody tr:first td .button_qrcode').off("click").on("click", function() {
-           var NWin = window.open($(this).prop('href'), '', 'scrollbars=0,location=0,height=<?php echo SEAN_QR_WIDTH ?>,width=<?php echo SEAN_QR_WIDTH ?>');
-           if (window.focus) {
-             NWin.focus();
-           }
-           return false;
-        });
-<?php			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
-        var shorturl = $('#main_table tbody tr:first td.keyword a:first').attr('href').replace(/^http(s)?:\/\//, "//");
-        $('#sean_qr_img').attr( 'src', shorturl + '.qr' );
-<?php			endif; ?>
+      if($('#add-button').hasClass('loading')) {
+        sean_add_qr_popup($('#main_table tbody tr:first td .button_qrcode'));
+        var id = $('#main_table tbody tr:first').attr('id').replace(/^id-/, "");
+        sean_toggle_qr(id);
+      }
     });
 
 });
-<?php			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
+
+function sean_add_qr_popup(el) {
+    // need to do 'off' first because adding a URL triggers this twice and we don't want two identical actions added to click
+    el.off('click').on('click', function() {
+      var NWin = window.open($(this).attr('href'), '', 'scrollbars=0,location=0,height=<?php echo SEAN_QR_WIDTH ?>,width=<?php echo SEAN_QR_WIDTH ?>');
+      if (window.focus) {
+        NWin.focus();
+      }
+      return false;
+    });
+}
+
 function sean_toggle_qr(id) {
+<?php			if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
     var shorturl = $('#keyword-'+id+' a:first').attr('href').replace(/^http(s)?:\/\//, "//");
     $('#sean_qr_img').attr( 'src', shorturl + '.qr' );
-}
 <?php			endif; ?>
+}
+
 </script>
 <?php
 		endif;
