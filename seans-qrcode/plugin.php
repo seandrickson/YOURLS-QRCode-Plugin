@@ -3,7 +3,7 @@
 Plugin Name: Sean's QR Code Short URLs
 Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
 Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
-Version: 1.1
+Version: 1.2
 Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
 */
@@ -21,8 +21,9 @@ defined('SEAN_QR_WIDTH') or define('SEAN_QR_WIDTH', 200);
 // should we include a QR code in the share boxes
 defined('SEAN_QR_ADD_TO_SHAREBOX') or define('SEAN_QR_ADD_TO_SHAREBOX', true);
 
-// format of image. 'svg' for SVG, otherwise it will by PNG
-defined('SEAN_QR_FMT') or define('SEAN_QR_FMT', 'png');
+// default format of image. 'svg' for SVG, otherwise it will by PNG
+// can be overridden by appending '.svg' or '.png' to the short URL
+defined('SEAN_QR_DEFAULT_FMT') or define('SEAN_QR_FMT', 'png');
 
 // outside margin of QR code in 'virtual' pixels:
 defined('SEAN_QR_MARGIN') or define('SEAN_QR_MARGIN', 2);
@@ -36,9 +37,6 @@ yourls_add_action( 'loader_failed', 'sean_yourls_qrcode' );
 function sean_yourls_qrcode( $request ) {
 	// --- START configurable variables ---
 
-	// output file name, if false outputs to browser with required headers:
-	$outfile = false;
-
 	// Error correction level. Constants - do not use quotes!
 	// One of QR_ECLEVEL_L, QR_ECLEVEL_M, QR_ECLEVEL_Q or QR_ECLEVEL_H
 	// NB this can not be defined as a constant in user/config.php because 
@@ -47,12 +45,14 @@ function sean_yourls_qrcode( $request ) {
 
 	// --- END configurable variables ---
 
+	// output file name passed to phpqrcode. We use false to output to the browser
+	$outfile = false;
+
 	// Get authorized charset in keywords and make a regexp pattern
 	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
 
-	// if the shorturl is like bleh.qr...
-	if( preg_match( "@^([$pattern]+)\.qr?/?$@", $request[0], $matches ) ) {
-
+	// if the shorturl is like bleh.qr or bleh.qr.png or bleh.qr.svg ...
+	if( preg_match( "@^([$pattern]+)(\.qr)(\.svg|\.png|/)?$@i", $request[0], $matches ) ) {
 		// if this shorturl exists...
 		$keyword = yourls_sanitize_keyword( $matches[1] );
 		if( yourls_is_shorturl( $keyword ) ) {
@@ -70,8 +70,15 @@ function sean_yourls_qrcode( $request ) {
 				$url = strtoupper( $url );
 			}
 
+			$fmt = SEAN_QR_DEFAULT_FMT;
+			if(strtolower($matches[3]) == '.svg') {
+				$fmt = 'svg';
+			} elseif(strtolower($matches[3]) == '.png') {
+				$fmt = 'png';
+			}
+
 			// Show the QR code then!
-			if(SEAN_QR_FMT == 'svg') {
+			if($fmt == 'svg') {
 				header('Content-type: image/svg+xml');
 				echo QRcode::svg($url, false, $outfile, $level, SEAN_QR_WIDTH, false, SEAN_QR_MARGIN);
 			} else {
@@ -113,7 +120,7 @@ function sean_add_qrcode_button( $action_links, $keyword, $url, $ip, $clicks, $t
 }
 
 
-// Add the CSS to <head>
+// Add the CSS and some extra javascript to <head>
 yourls_add_action( 'html_head', 'sean_add_qrcode_css_head' );
 function sean_add_qrcode_css_head( $context ) {
 
@@ -172,6 +179,7 @@ if (SEAN_QR_ADD_TO_SHAREBOX) {
     yourls_add_filter('table_add_row_action_array', 'sean_change_share_action');
 }
 
+/* Add the extra HTML for the QR code to the share boxe */
 function sean_add_qr_div($args) {
 ?>
 <div id="sean_qr_box" class="share">
@@ -181,7 +189,7 @@ function sean_add_qr_div($args) {
 <?php
 }
 
-
+/* modify the 'onclick' action for the share buttons to include toggling the QR code */
 function sean_change_share_action($actions) {
     $id = substr($actions['share']['id'],13);
     $actions['share']['onclick'] = "toggle_share('$id');sean_toggle_qr('$id');return false;";
