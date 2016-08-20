@@ -45,7 +45,7 @@ The default format to generate QR codes in. This can be overridden be adding the
 
 ### SEAN_QR_MARGIN
 _Interger. Default: 2._  
-The width of the margin (quiet zone) around the QR, in 'virtual pixels'. A value of 4 is generally recommended, but if you are using the QR context where it is surrounded by white space anyway lower values may work fine.
+The width of the margin (quiet zone) around the QR, in 'virtual pixels'. A value of 4 is generally recommended, but if you are using the QR code in a context where it is surrounded by white space anyway lower values may work fine.
 
 Bonus
 -----

@@ -181,9 +181,12 @@ if (SEAN_QR_ADD_TO_SHAREBOX) {
 
 /* Add the extra HTML for the QR code to the share boxe */
 function sean_add_qr_div($args) {
+$h = "h2";
+if( defined('YOURLS_INFOS') && YOURLS_INFOS) $h = "h3"; 
+$heading = "<$h>QR</$h>";
 ?>
 <div id="sean_qr_box" class="share">
-<h2>QR</h2>
+<?php echo $heading; ?>
 <img src="<?php echo !empty($args[1])?$args[1] . '.qr':'' ?>" id="sean_qr_img" alt="QR code" width="75px" />
 </div>
 <?php
