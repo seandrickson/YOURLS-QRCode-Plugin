@@ -184,10 +184,12 @@ function sean_add_qr_div($args) {
 $h = "h2";
 if( defined('YOURLS_INFOS') && YOURLS_INFOS) $h = "h3"; 
 $heading = "<$h>QR</$h>";
+$img = !empty($args[1])?$args[1] . '.qr':'';
+$img = yourls_match_current_protocol($img);
 ?>
 <div id="sean_qr_box" class="share">
 <?php echo $heading; ?>
-<img src="<?php echo !empty($args[1])?$args[1] . '.qr':'' ?>" id="sean_qr_img" alt="QR code" width="75px" />
+<img src="<?php echo $img; ?>" id="sean_qr_img" alt="QR code" width="75px" />
 </div>
 <?php
 }
