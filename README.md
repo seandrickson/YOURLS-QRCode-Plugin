@@ -1,7 +1,7 @@
 YOURLS QR Code Plugin
 =====================
 
-Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding `.qr` to the end of the short URL. Can also optionally display a QR code in the share box. 
+Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding `.qr` to the end of the short URL.) Can also optionally display a QR code in the share box. 
 
 QR codes can be configured to be either PNG or SVG format by default. Appending the extension `.svg` or `.png` to the URL will force the format.
 
