@@ -132,6 +132,7 @@ function sean_add_qrcode_css_head( $context ) {
 				td.actions .button_qrcode {
 					margin-right: 0;
 					background: url(data:image/png;base64,R0lGODlhEAAQAIAAAAAAAP///yH5BAAAAAAALAAAAAAQABAAAAIvjI9pwIztAjjTzYWr1FrS923NAymYSV3borJW26KdaHnr6UUxd4fqL0qNbD2UqQAAOw==) no-repeat 2px 50%;
+          visibility: visible !important;
 				}
 			</style>
 
