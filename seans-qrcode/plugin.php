@@ -162,8 +162,10 @@ function sean_add_qrcode_css_head( $context ) {
 
 			function sean_toggle_qr(id) {
 				<?php if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
-					var shorturl = $('#keyword-'+id+' a:first').attr('href').replace(/^http(s)?:\/\//, "//");
-					$('#sean_qr_img').attr( 'src', shorturl + '.qr' );
+					var shorturl = $('#keyword-'+id+' a:first').attr('href');
+					if (shorturl != undefined) {
+						$('#sean_qr_img').attr( 'src', shorturl.replace(/^http(s)?:\/\//, "//") + '.qr' );
+					}
 				<?php endif; ?>
 			}
 
