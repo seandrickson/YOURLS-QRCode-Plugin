@@ -42,7 +42,7 @@ class LogoOptions extends QROptions{
 }
 
 // Kick in if the loader does not recognize a valid pattern
-yourls_add_action( 'loader_failed', 'sean_yourls_qrcode' );
+yourls_add_action( 'redirect_keyword_not_found', 'sean_yourls_qrcode' );
 function sean_yourls_qrcode( $request ) {
 	// Get authorized charset in keywords and make a regexp pattern
 	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
