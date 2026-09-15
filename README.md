@@ -13,7 +13,7 @@ Move the `seans-qrcode` folder into the `/users/plugins` folder. Then, activate 
 Requirements
 ------------
 
-User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed. Latest version is tested with YOURLS 1.8.2.
+User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed. Latest version is tested with YOURLS 1.10.x, which requires PHP 8.1+.
 
 **WARNING**: Does not work with YOURLS 1.6.
 

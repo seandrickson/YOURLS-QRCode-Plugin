@@ -3,7 +3,7 @@
 Plugin Name: Sean's QR Code Short URLs
 Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
 Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
-Version: 1.2
+Version: 1.3
 Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
 */
@@ -34,12 +34,7 @@ require_once __DIR__.'/vendor/autoload.php';
 require_once( dirname(__FILE__).'/QRImageWithLogo.php' );
 
 use chillerlan\QRCode\{QRCode, QROptions};
-
-class LogoOptions extends QROptions{
-	// size in QR modules, multiply with QROptions::$scale for pixel size
-	protected int $logoSpaceWidth;
-	protected int $logoSpaceHeight;
-}
+use chillerlan\QRCode\Common\EccLevel;
 
 // Kick in if the loader does not recognize a valid pattern
 yourls_add_action( 'loader_failed', 'sean_yourls_qrcode' );
@@ -67,11 +62,12 @@ function sean_yourls_qrcode( $request ) {
 				$url = strtoupper( $url );
 			}
 
-			$options = new LogoOptions;
+			$options = new QROptions;
 
 			$options->version          = 7;
-			$options->eccLevel         = QRCode::ECC_H;
-			$options->imageBase64      = false;
+			$options->eccLevel         = EccLevel::H;
+			$options->outputBase64     = false;
+			$options->addLogoSpace     = true;
 			$options->logoSpaceWidth   = SEAN_QR_LOGO_SPACE;
 			$options->logoSpaceHeight  = SEAN_QR_LOGO_SPACE;
 			$options->scale            = SEAN_QR_SCALE;
@@ -80,7 +76,10 @@ function sean_yourls_qrcode( $request ) {
 
 			header('Content-type: image/png');
 
-			$qrOutputInterface = new QRImageWithLogo($options, (new QRCode($options))->getMatrix($url));
+			$qrcode = new QRCode($options);
+			$qrcode->addByteSegment($url);
+
+			$qrOutputInterface = new QRImageWithLogo($options, $qrcode->getQRMatrix());
 
 			// dump the output, with an additional logo
 			echo $qrOutputInterface->dump(null, __DIR__.'/logo.png');
@@ -95,7 +94,7 @@ function sean_yourls_qrcode( $request ) {
 yourls_add_filter( 'action_links', 'sean_add_qrcode_button' );
 function sean_add_qrcode_button( $action_links, $keyword, $url, $ip, $clicks, $timestamp ) {
 	$surl = yourls_link( $keyword );
-	$id = yourls_string2htmlid( $keyword ); // used as HTML #id
+	$id = yourls_unique_element_id( 'qrlink' ); // used as HTML #id
 
 	// We're adding .qr to the end of the URL, right?
 	$qr = '.qr';
@@ -104,7 +103,7 @@ function sean_add_qrcode_button( $action_links, $keyword, $url, $ip, $clicks, $t
 	// Define the QR Code
 	$qrcode = array(
 		'href'    => $qrlink,
-		'id'      => "qrlink-$id",
+		'id'      => $id,
 		'title'   => 'QR Code',
 		'anchor'  => 'QR Code'
 	);
@@ -182,14 +181,14 @@ if (SEAN_QR_ADD_TO_SHAREBOX) {
 }
 
 /* Add the extra HTML for the QR code to the share boxe */
-function sean_add_qr_div($args) {
+function sean_add_qr_div($longurl, $shorturl = '') {
 	$h = "h2";
 	if( defined('YOURLS_INFOS') && YOURLS_INFOS) {
 		$h = "h3";
 	}
 
 	$heading = "<$h>QR</$h>";
-	$img = !empty($args[1])?$args[1] . '.qr':'';
+	$img = !empty($shorturl)?$shorturl . '.qr':'';
 	$img = yourls_match_current_protocol($img);
 ?>
 	<div id="sean_qr_box" class="share">
