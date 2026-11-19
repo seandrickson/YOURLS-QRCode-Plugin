@@ -181,14 +181,14 @@ if (SEAN_QR_ADD_TO_SHAREBOX) {
 }
 
 /* Add the extra HTML for the QR code to the share boxe */
-function sean_add_qr_div($longurl, $shorturl = '') {
+function sean_add_qr_div($args) {
 	$h = "h2";
 	if( defined('YOURLS_INFOS') && YOURLS_INFOS) {
 		$h = "h3";
 	}
 
 	$heading = "<$h>QR</$h>";
-	$img = !empty($shorturl)?$shorturl . '.qr':'';
+	$img = !empty($args[1])?$args[1] . '.qr':'';
 	$img = yourls_match_current_protocol($img);
 ?>
 	<div id="sean_qr_box" class="share">
