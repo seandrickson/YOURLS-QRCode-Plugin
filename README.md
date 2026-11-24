@@ -40,6 +40,8 @@ The plugin requires no special configuration, but there are a few options that y
 define("SEAN_QR_SCALE", 5);
 ```
 
+You can also set any of these options as an environment variable with the same name (for example `SEAN_QR_LOGO=false`), which is easier with Docker. A constant in `user/config.php` takes priority over an environment variable.
+
 ### SEAN_QR_SCALE
 _Integer. Default: 5._  
 The size of a QR code pixel (SVG, IMAGE_*), HTML -> via CSS
@@ -56,9 +58,49 @@ The size of the logo area in QR modules (multiply by `SEAN_QR_SCALE` for pixels)
 _Boolean. Default: true._  
 Whether to include a QR code in the share boxes. Set to true to enable.
 
+### SEAN_QR_BUTTON_ALWAYS_VISIBLE
+_Boolean. Default: true._  
+Whether the QR Code button in the admin list is always visible. Set to false to show it only when hovering a row, like the other action buttons (Share, Edit, ...).
+
 ### SEAN_QR_MARGIN
 _Integer. Default: 4._  
 The width of the margin (quiet zone) around the QR, in 'virtual pixels'. A value of 4 is generally recommended, but if you are using the QR code in a context where it is surrounded by white space anyway lower values may work fine.
+
+Using the QR code elsewhere
+---------------------------
+
+Any short URL followed by `.qr` returns a PNG image, so you can show a QR code anywhere, for example on your public page or theme:
+
+```html
+<img src="https://sho.rt/abc.qr" alt="QR code">
+```
+
+Docker
+------
+
+The [official YOURLS image](https://hub.docker.com/_/yourls) doesn't include the `gd` PHP extension or Composer, which this plugin needs. Build your own image on top of it, e.g. with this `Dockerfile`:
+
+```dockerfile
+FROM yourls:latest
+
+RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - | sh -s gd @composer
+```
+
+In `docker-compose.yml`, use `build: path/to/folder_with_dockerfile` instead of `image: yourls`. Then install the plugin's dependencies inside the running container:
+
+```bash
+docker compose exec yourls sh -c "cd user/plugins/seans-qrcode && composer install"
+```
+
+Options can be set as environment variables in `docker-compose.yml`:
+
+```yaml
+    environment:
+      SEAN_QR_LOGO: "false"
+      SEAN_QR_BUTTON_ALWAYS_VISIBLE: "false"
+```
+
+Thanks to [@zmweske](https://github.com/zmweske) for the Docker notes ([#18](https://github.com/seandrickson/YOURLS-QRCode-Plugin/issues/18)).
 
 Bonus
 -----
