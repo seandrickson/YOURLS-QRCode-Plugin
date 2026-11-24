@@ -3,7 +3,7 @@
 Plugin Name: Sean's QR Code Short URLs
 Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
 Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
-Version: 1.3
+Version: 1.4
 Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
 */
@@ -28,13 +28,38 @@ defined('SEAN_QR_ADD_TO_SHAREBOX') or define('SEAN_QR_ADD_TO_SHAREBOX', true);
 // outside margin of QR code in 'virtual' pixels:
 defined('SEAN_QR_MARGIN') or define('SEAN_QR_MARGIN', 4);
 
+// should we place the logo (logo.png) in the middle of the QR code
+defined('SEAN_QR_LOGO') or define('SEAN_QR_LOGO', true);
+
+/*
+ * Check requirements before loading anything that needs them, so a missing
+ * `composer install` or an old PHP shows an admin notice instead of a fatal error.
+ * (Keep the code above this check compatible with old PHP versions.)
+ */
+$sean_qr_error = '';
+if( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+	$sean_qr_error = 'requires PHP 8.1 or newer (this server runs PHP ' . PHP_VERSION . ').';
+} elseif( !is_readable( __DIR__.'/vendor/autoload.php' ) ) {
+	$sean_qr_error = 'is missing its dependencies. Run <code>composer install</code> in the <code>user/plugins/seans-qrcode</code> folder.';
+}
+if( $sean_qr_error ) {
+	if( function_exists( 'yourls_add_notice' ) ) {
+		yourls_add_notice( "<strong>Sean's QR Code Short URLs</strong> $sean_qr_error QR codes are disabled until this is fixed.", 'error' );
+	}
+	unset( $sean_qr_error );
+	return;
+}
+unset( $sean_qr_error );
+
 require_once __DIR__.'/vendor/autoload.php';
 
 //include qrcode library
 require_once( dirname(__FILE__).'/QRImageWithLogo.php' );
 
 use chillerlan\QRCode\{QRCode, QROptions};
-use chillerlan\QRCode\Common\EccLevel;
+use chillerlan\QRCode\Common\{EccLevel, Version};
+use chillerlan\QRCode\Data\AlphaNum;
+use chillerlan\QRCode\Output\QRGdImagePNG;
 
 // Kick in when the requested keyword is not found (e.g. 'abc.qr').
 // This hook fires before 'loader_failed', so plugins that exit on it
@@ -64,27 +89,52 @@ function sean_yourls_qrcode( $request ) {
 				$url = strtoupper( $url );
 			}
 
+			// the logo needs at least 3 modules (1 module border on each side)
+			$with_logo = SEAN_QR_LOGO && SEAN_QR_LOGO_SPACE > 2;
+
 			$options = new QROptions;
 
-			$options->version          = 7;
-			$options->eccLevel         = EccLevel::H;
+			// pick the smallest QR version that fits the URL
+			$options->version          = Version::AUTO;
 			$options->outputBase64     = false;
-			$options->addLogoSpace     = true;
-			$options->logoSpaceWidth   = SEAN_QR_LOGO_SPACE;
-			$options->logoSpaceHeight  = SEAN_QR_LOGO_SPACE;
 			$options->scale            = SEAN_QR_SCALE;
 			$options->imageTransparent = false;
 			$options->quietzoneSize    = SEAN_QR_MARGIN;
 
-			header('Content-type: image/png');
+			if( $with_logo ) {
+				// The logo hides part of the code, so use the highest error correction
+				// and a minimum version so the logo stays a small share of the code
+				// (smaller versions with a 13-module logo don't scan reliably)
+				$options->eccLevel        = EccLevel::H;
+				$options->versionMin      = 5;
+				$options->addLogoSpace    = true;
+				$options->logoSpaceWidth  = SEAN_QR_LOGO_SPACE;
+				$options->logoSpaceHeight = SEAN_QR_LOGO_SPACE;
+			} else {
+				$options->eccLevel        = EccLevel::M;
+			}
 
 			$qrcode = new QRCode($options);
-			$qrcode->addByteSegment($url);
 
-			$qrOutputInterface = new QRImageWithLogo($options, $qrcode->getQRMatrix());
+			// Alphanumeric mode (0-9, A-Z, space and $%*+-./:) uses fewer bits
+			// per character than byte mode, which gives a smaller QR code
+			if( AlphaNum::validateString( $url ) ) {
+				$qrcode->addAlphaNumSegment( $url );
+			} else {
+				$qrcode->addByteSegment( $url );
+			}
 
-			// dump the output, with an additional logo
-			echo $qrOutputInterface->dump(null, __DIR__.'/logo.png');
+			$matrix = $qrcode->getQRMatrix();
+
+			if( $with_logo ) {
+				// dump the output, with an additional logo
+				$png = ( new QRImageWithLogo( $options, $matrix ) )->dump( null, __DIR__.'/logo.png' );
+			} else {
+				$png = ( new QRGdImagePNG( $options, $matrix ) )->dump();
+			}
+
+			header('Content-type: image/png');
+			echo $png;
 
 			exit;
 		}
