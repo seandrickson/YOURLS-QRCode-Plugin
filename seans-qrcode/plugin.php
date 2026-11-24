@@ -36,14 +36,16 @@ require_once( dirname(__FILE__).'/QRImageWithLogo.php' );
 use chillerlan\QRCode\{QRCode, QROptions};
 use chillerlan\QRCode\Common\EccLevel;
 
-// Kick in if the loader does not recognize a valid pattern
+// Kick in when the requested keyword is not found (e.g. 'abc.qr').
+// This hook fires before 'loader_failed', so plugins that exit on it
+// (such as Ozh's 404-if-not-found) don't prevent QR codes from being served.
 yourls_add_action( 'redirect_keyword_not_found', 'sean_yourls_qrcode' );
 function sean_yourls_qrcode( $request ) {
 	// Get authorized charset in keywords and make a regexp pattern
 	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
 
 	// if the shorturl is like bleh.qr
-	if( preg_match( "@^([$pattern]+)(\.qr)?$@i", $request[0], $matches ) ) {
+	if( preg_match( "@^([$pattern]+)\.qr$@i", $request[0], $matches ) ) {
 		// if this shorturl exists...
 		$keyword = yourls_sanitize_keyword( $matches[1] );
 		if( yourls_is_shorturl( $keyword ) ) {

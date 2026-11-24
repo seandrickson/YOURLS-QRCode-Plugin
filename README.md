@@ -13,11 +13,11 @@ Move the `seans-qrcode` folder into the `/users/plugins` folder. Then, activate 
 Requirements
 ------------
 
-User must have [YOURLS](http://yourls.org/#Install) 1.5.1+ installed. Latest version is tested with YOURLS 1.10.x, which requires PHP 8.1+.
+User must have [YOURLS](http://yourls.org/#Install) 1.8+ installed (the plugin relies on the `redirect_keyword_not_found` hook). Latest version is tested with YOURLS 1.10.x, which requires PHP 8.1+.
 
-**WARNING**: Does not work with YOURLS 1.6.
+In addition to the [server requirements of YOURLS](http://yourls.org/#requirement), the [chillerlan/php-qrcode](https://github.com/chillerlan/php-qrcode) library requires the `gd` and `mbstring` PHP extensions.
 
-In addition to the [server requirements of YOURLS](http://yourls.org/#requirement), make sure you follow the [server requirements of PHP QR Code library](http://sourceforge.net/p/phpqrcode/code/HEAD/tree/branches/www/1.1.4/INSTALL).
+Compatible with Ozh's [404 if not found](https://github.com/YOURLS/404-if-not-found) plugin.
 
 If these requirements can't be met, but you can install and run YOURLS, try the [Google Chart API QR Code Plugin](https://github.com/YOURLS/YOURLS/wiki/Plugin-%3D-QRCode-ShortURL) from Ozh (YOURL's developer).
 
