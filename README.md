@@ -140,6 +140,17 @@ composer check
 
 `composer check` runs the format check, the linter and the analyzer, like CI does. `composer format` formats the code.
 
+### Releasing
+
+Don't create tags or releases by hand. In the repository's **Actions** tab, open **Release**, click **Run workflow** (on `master`) and enter the new version, e.g. `1.6`. The workflow:
+
+1. sets the `Version:` line in `seans-qrcode/plugin.php`,
+2. installs the dependencies, smoke-tests the plugin and builds `seans-qrcode-v1.6.zip`,
+3. commits the version change to `master` and tags that commit `v1.6`,
+4. publishes the GitHub release with the zip and auto-generated release notes.
+
+Running it with a version that's already tagged rebuilds that release's zip without changing `master`.
+
 Credits
 -------
 

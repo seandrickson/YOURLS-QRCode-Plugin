@@ -1,35 +1,79 @@
 name: Release
 
-# Builds the plugin with its Composer dependencies and attaches a ready-to-install
-# zip to a GitHub release.
+# Run this from the Actions tab ("Release" > "Run workflow") on master, with
+# the version to release, e.g. 1.6. It:
 #
-# - Push a tag like v1.5 to create the release (the tag must match the
-#   "Version:" line in seans-qrcode/plugin.php).
-# - Or run this workflow manually for an existing tag to rebuild its zip.
+#   1. sets the "Version:" line in seans-qrcode/plugin.php,
+#   2. installs the Composer dependencies, smoke-tests the plugin and zips it,
+#   3. commits the version change to master and tags that commit v1.6,
+#   4. publishes the GitHub release with the zip attached.
+#
+# The tag, master and the zip always have the same version. If the tag
+# already exists (e.g. to rebuild a release's zip), it builds that tag as it
+# is and replaces the zip, without changing master.
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Existing tag to build, e.g. v1.5'
+      version:
+        description: 'Version to release, e.g. 1.6'
         required: true
 
 permissions:
   contents: write
 
+# one release at a time
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       GH_TOKEN: ${{ github.token }}
+      INPUT_VERSION: ${{ inputs.version }}
     steps:
+      - name: Check inputs
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+            echo "::error::Run this workflow on master (it commits the version change there)"
+            exit 1
+          fi
+          version="${INPUT_VERSION#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+){1,2}$'; then
+            echo "::error::'$INPUT_VERSION' isn't a version like 1.6 or 1.6.1"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAG=v$version" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      - name: Set the version
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+            # rebuild an existing release from its tag
+            git checkout -q "$TAG"
+            echo "NEW_TAG=false" >> "$GITHUB_ENV"
+          else
+            current=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
+            lowest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | head -n 1)
+            if [ "$lowest" != "$current" ]; then
+              echo "::error::$VERSION is lower than the current version $current"
+              exit 1
+            fi
+            sed -i -E "s/^Version:[[:space:]]*.*$/Version: $VERSION/" seans-qrcode/plugin.php
+            echo "NEW_TAG=true" >> "$GITHUB_ENV"
+          fi
+
+          version=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
+          if [ "$version" != "$VERSION" ]; then
+            echo "::error::plugin.php says version $version, expected $VERSION"
+            exit 1
+          fi
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -37,14 +81,6 @@ jobs:
           extensions: gd, mbstring
           tools: composer:v2
           coverage: none
-
-      - name: Check tag matches plugin version
-        run: |
-          version=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
-          if [ "v$version" != "$TAG" ]; then
-            echo "::error::Tag $TAG does not match plugin version $version in seans-qrcode/plugin.php"
-            exit 1
-          fi
 
       - name: Install Composer dependencies
         working-directory: seans-qrcode
@@ -76,6 +112,18 @@ jobs:
         run: |
           zip -r -q "seans-qrcode-$TAG.zip" seans-qrcode
           unzip -l "seans-qrcode-$TAG.zip" | tail -1
+
+      - name: Commit the version and tag it
+        if: env.NEW_TAG == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --quiet -- seans-qrcode/plugin.php; then
+            git commit -q -m "Release $VERSION" -- seans-qrcode/plugin.php
+          fi
+          git tag -a "$TAG" -m "Release $VERSION"
+          # push both together, so master isn't bumped without its tag (or the other way round)
+          git push --atomic origin HEAD:master "$TAG"
 
       - name: Create or update release
         run: |
