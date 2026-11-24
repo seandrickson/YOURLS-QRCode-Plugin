@@ -3,7 +3,7 @@
 Plugin Name: Sean's QR Code Short URLs
 Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
 Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
-Version: 1.4
+Version: 1.5
 Author: Sean Hendrickson
 Author URI: https://github.com/seandrickson
 */
@@ -66,8 +66,8 @@ sean_qr_config( 'SEAN_QR_BUTTON_ALWAYS_VISIBLE', true );
  * (Keep the code above this check compatible with old PHP versions.)
  */
 $sean_qr_error = '';
-if( version_compare( PHP_VERSION, '8.1', '<' ) ) {
-	$sean_qr_error = 'requires PHP 8.1 or newer (this server runs PHP ' . PHP_VERSION . ').';
+if( version_compare( PHP_VERSION, '8.2', '<' ) ) {
+	$sean_qr_error = 'requires PHP 8.2 or newer (this server runs PHP ' . PHP_VERSION . ').';
 } elseif( !is_readable( __DIR__.'/vendor/autoload.php' ) ) {
 	$sean_qr_error = 'is missing its dependencies. Run <code>composer install</code> in the <code>user/plugins/seans-qrcode</code> folder.';
 }

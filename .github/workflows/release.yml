@@ -1,0 +1,87 @@
+name: Release
+
+# Builds the plugin with its Composer dependencies and attaches a ready-to-install
+# zip to a GitHub release.
+#
+# - Push a tag like v1.5 to create the release (the tag must match the
+#   "Version:" line in seans-qrcode/plugin.php).
+# - Or run this workflow manually for an existing tag to rebuild its zip.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build, e.g. v1.5'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: gd, mbstring
+          tools: composer:v2
+          coverage: none
+
+      - name: Check tag matches plugin version
+        run: |
+          version=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match plugin version $version in seans-qrcode/plugin.php"
+            exit 1
+          fi
+
+      - name: Install Composer dependencies
+        working-directory: seans-qrcode
+        run: |
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+          # dist packages leave out tests, docs and .git; a source fallback would bloat the zip
+          if find vendor -name .git -print -quit | grep -q .; then
+            echo "::error::Composer installed from source (git clones) instead of dist archives"
+            exit 1
+          fi
+
+      - name: Smoke test
+        working-directory: seans-qrcode
+        run: |
+          for f in *.php; do php -l "$f"; done
+          php -r '
+            require "vendor/autoload.php";
+            $url = "https://sho.rt/abc";
+            $options = new chillerlan\QRCode\QROptions([
+              "outputInterface" => chillerlan\QRCode\Output\QRGdImagePNG::class,
+              "outputBase64"    => false,
+            ]);
+            $png = (new chillerlan\QRCode\QRCode($options))->render($url);
+            $decoded = (string)(new chillerlan\QRCode\QRCode)->readFromBlob($png);
+            if ($decoded !== $url) { fwrite(STDERR, "QR round trip failed: $decoded\n"); exit(1); }
+            echo "QR round trip OK\n";
+          '
+
+      - name: Build zip
+        run: |
+          zip -r -q "seans-qrcode-$TAG.zip" seans-qrcode
+          unzip -l "seans-qrcode-$TAG.zip" | tail -1
+
+      - name: Create or update release
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "seans-qrcode-$TAG.zip" --clobber
+          else
+            gh release create "$TAG" "seans-qrcode-$TAG.zip" --verify-tag --title "$TAG" --generate-notes
+          fi

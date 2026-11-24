@@ -6,6 +6,14 @@ Allows you to get the QR code by simply clicking on a button in the Admin area (
 Installation
 ------------
 
+### From a release (easiest)
+
+1. Download `seans-qrcode-vX.Y.zip` from the [latest release](https://github.com/seandrickson/YOURLS-QRCode-Plugin/releases/latest). It already includes the QR code library, so you don't need Composer.
+2. Unzip it into your YOURLS `user/plugins` folder, so you have `user/plugins/seans-qrcode/plugin.php`.
+3. Activate the plugin in the admin interface. That's all there is to it, but see Configuration below.
+
+### From source
+
 1. Copy the `seans-qrcode` folder into your YOURLS `user/plugins` folder.
 2. Install the QR code library with [Composer](https://getcomposer.org/), from inside that folder:
 
@@ -17,12 +25,12 @@ Installation
    This creates the `vendor` folder the plugin needs. If you skip this step, the admin area shows a notice and no QR codes are generated.
 3. Activate the plugin in the admin interface. That's all there is to it, but see Configuration below.
 
-Error messages like `Failed opening required '.../vendor/autoload.php'` or `syntax error, unexpected 'int'` on older versions of the plugin mean step 2 was skipped or PHP is older than 8.1.
+Error messages like `Failed opening required '.../vendor/autoload.php'` or `syntax error, unexpected 'int'` on older versions of the plugin mean step 2 was skipped or PHP is older than 8.2.
 
 Requirements
 ------------
 
-User must have [YOURLS](http://yourls.org/#Install) 1.8+ installed (the plugin relies on the `redirect_keyword_not_found` hook). Latest version is tested with YOURLS 1.10.x, which requires PHP 8.1+.
+User must have [YOURLS](http://yourls.org/#Install) 1.8+ installed (the plugin relies on the `redirect_keyword_not_found` hook). Latest version is tested with YOURLS 1.10.x and requires PHP 8.2+ (needed by the QR code library).
 
 In addition to the [server requirements of YOURLS](http://yourls.org/#requirement), the [chillerlan/php-qrcode](https://github.com/chillerlan/php-qrcode) library requires the `gd` and `mbstring` PHP extensions.
 

@@ -1,8 +1,13 @@
 {
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "chillerlan/php-qrcode": "^6.0",
         "ext-mbstring": "*",
         "ext-gd": "*"
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
+        }
     }
 }
