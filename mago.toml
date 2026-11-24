@@ -1,0 +1,21 @@
+# Mago configuration: https://mago.carthage.software
+# Run with `composer check` (or `composer format`, `composer lint`, `composer analyze`)
+# after `composer install` here and in seans-qrcode/.
+
+# The plugin supports PHP 8.2+, so check the code against 8.2
+php-version = "8.2.0"
+
+[source]
+paths = ["seans-qrcode/plugin.php", "seans-qrcode/hooks.php", "seans-qrcode/src"]
+# Read for definitions (php-qrcode, YOURLS functions), but not checked
+includes = ["seans-qrcode/vendor", "vendor/yourls/yourls/includes"]
+
+[linter.rules]
+# Named arguments are PHP 8 syntax, and plugin.php must stay parseable on old
+# PHP so it can show its "requires PHP 8.2" notice; YOURLS hook calls also read
+# fine positionally
+literal-named-argument = { enabled = false }
+# a style preference, not a correctness issue
+no-else-clause = { enabled = false }
+# hooks.php is where YOURLS passes values in; see the note at the top of that file
+strict-types = { exclude = ["seans-qrcode/hooks.php"] }

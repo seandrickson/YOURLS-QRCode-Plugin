@@ -1,0 +1,24 @@
+{
+    "name": "seandrickson/yourls-qrcode-plugin-dev",
+    "description": "Development tools for the YOURLS QR code plugin (the plugin itself lives in seans-qrcode/)",
+    "require-dev": {
+        "carthage-software/mago": "^1.61",
+        "yourls/yourls": "^1.10"
+    },
+    "scripts": {
+        "format": "mago format",
+        "lint": "mago lint",
+        "analyze": "mago analyze",
+        "check": [
+            "mago format --check",
+            "mago lint",
+            "mago analyze"
+        ]
+    },
+    "config": {
+        "platform": {
+            "php": "8.4"
+        },
+        "platform-check": false
+    }
+}

@@ -1,4 +1,6 @@
 {
+    "name": "seandrickson/yourls-qrcode-plugin",
+    "description": "YOURLS plugin: QR codes for short URLs",
     "require": {
         "php": "^8.2",
         "chillerlan/php-qrcode": "^6.0",
