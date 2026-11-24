@@ -4,7 +4,7 @@
  * Plugin Name: Sean's QR Code Short URLs
  * Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
  * Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
- * Version: 1.5
+ * Version: 1.6
  * Author: Sean Hendrickson
  * Author URI: https://github.com/seandrickson
  */
