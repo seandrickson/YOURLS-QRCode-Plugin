@@ -54,22 +54,34 @@ jobs:
 
       - name: Set the version
         run: |
+          # the plugin header line, with or without a leading " * " (as the formatter writes it)
+          header='^([[:space:]]*\*?[[:space:]]*)Version:[[:space:]]*'
+          read_version() {
+            local lines
+            lines=$(grep -Ec "${header}" seans-qrcode/plugin.php || true)
+            if [ "$lines" != 1 ]; then
+              echo "::error::Expected one 'Version:' line in seans-qrcode/plugin.php, found $lines" >&2
+              exit 1
+            fi
+            sed -nE "s/${header}//p" seans-qrcode/plugin.php | tr -d '\r'
+          }
+
           if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
             # rebuild an existing release from its tag
             git checkout -q "$TAG"
             echo "NEW_TAG=false" >> "$GITHUB_ENV"
           else
-            current=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
+            current=$(read_version)
             lowest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | head -n 1)
             if [ "$lowest" != "$current" ]; then
               echo "::error::$VERSION is lower than the current version $current"
               exit 1
             fi
-            sed -i -E "s/^Version:[[:space:]]*.*$/Version: $VERSION/" seans-qrcode/plugin.php
+            sed -i -E "s/${header}.*$/\1Version: ${VERSION}/" seans-qrcode/plugin.php
             echo "NEW_TAG=true" >> "$GITHUB_ENV"
           fi
 
-          version=$(sed -n 's/^Version:[[:space:]]*//p' seans-qrcode/plugin.php | tr -d '\r')
+          version=$(read_version)
           if [ "$version" != "$VERSION" ]; then
             echo "::error::plugin.php says version $version, expected $VERSION"
             exit 1
