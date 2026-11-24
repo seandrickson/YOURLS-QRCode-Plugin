@@ -13,23 +13,52 @@ if( !defined( 'YOURLS_ABSPATH' ) ) die();
 
 /**
  * The following configuration constants can be overridden
- * by defining them in user/config.php
+ * by defining them in user/config.php, or with environment
+ * variables of the same name (handy with Docker)
  */
 
+/**
+ * Define a config constant: user/config.php wins, then an environment
+ * variable of the same name, then the default.
+ * (Runs before the PHP version check, so keep it compatible with old PHP.)
+ */
+function sean_qr_config( $name, $default ) {
+	if( defined( $name ) ) {
+		return;
+	}
+	$value = $default;
+	$env = getenv( $name );
+	if( $env !== false && $env !== '' ) {
+		if( is_bool( $default ) ) {
+			$parsed = filter_var( $env, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+		} else {
+			$parsed = filter_var( $env, FILTER_VALIDATE_INT, array( 'flags' => FILTER_NULL_ON_FAILURE ) );
+		}
+		if( $parsed !== null ) {
+			$value = $parsed;
+		}
+	}
+	define( $name, $value );
+}
+
 // size of a QR code pixel (SVG, IMAGE_*), HTML -> via CSS
-defined('SEAN_QR_SCALE') or define('SEAN_QR_SCALE', 5);
+sean_qr_config( 'SEAN_QR_SCALE', 5 );
 
 // size in QR modules, multiply with QROptions::$scale for pixel size
-defined('SEAN_QR_LOGO_SPACE') or define('SEAN_QR_LOGO_SPACE', 13);
+sean_qr_config( 'SEAN_QR_LOGO_SPACE', 13 );
 
 // should we include a QR code in the share boxes
-defined('SEAN_QR_ADD_TO_SHAREBOX') or define('SEAN_QR_ADD_TO_SHAREBOX', true);
+sean_qr_config( 'SEAN_QR_ADD_TO_SHAREBOX', true );
 
 // outside margin of QR code in 'virtual' pixels:
-defined('SEAN_QR_MARGIN') or define('SEAN_QR_MARGIN', 4);
+sean_qr_config( 'SEAN_QR_MARGIN', 4 );
 
 // should we place the logo (logo.png) in the middle of the QR code
-defined('SEAN_QR_LOGO') or define('SEAN_QR_LOGO', true);
+sean_qr_config( 'SEAN_QR_LOGO', true );
+
+// should the QR Code button in the admin list always be visible,
+// or only on hover like the other action buttons
+sean_qr_config( 'SEAN_QR_BUTTON_ALWAYS_VISIBLE', true );
 
 /*
  * Check requirements before loading anything that needs them, so a missing
@@ -183,7 +212,12 @@ function sean_add_qrcode_css_head( $context ) {
 				td.actions .button_qrcode {
 					margin-right: 0;
 					background: url(data:image/png;base64,R0lGODlhEAAQAIAAAAAAAP///yH5BAAAAAAALAAAAAAQABAAAAIvjI9pwIztAjjTzYWr1FrS923NAymYSV3borJW26KdaHnr6UUxd4fqL0qNbD2UqQAAOw==) no-repeat 2px 50%;
-          visibility: visible !important;
+					<?php if( SEAN_QR_BUTTON_ALWAYS_VISIBLE ): ?>
+					/* older YOURLS hides action buttons with visibility, newer with opacity + pointer-events */
+					visibility: visible !important;
+					opacity: 1 !important;
+					pointer-events: auto !important;
+					<?php endif; ?>
 				}
 			</style>
 
