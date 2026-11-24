@@ -59,16 +59,15 @@ jobs:
       - name: Smoke test
         working-directory: seans-qrcode
         run: |
-          for f in *.php; do php -l "$f"; done
+          for f in plugin.php hooks.php src/*.php; do php -l "$f"; done
+          # render a QR code with the logo through the plugin's own renderer, then decode it
           php -r '
             require "vendor/autoload.php";
+            require "src/QRImageWithLogo.php";
+            require "src/QRCodeRenderer.php";
             $url = "https://sho.rt/abc";
-            $options = new chillerlan\QRCode\QROptions([
-              "outputInterface" => chillerlan\QRCode\Output\QRGdImagePNG::class,
-              "outputBase64"    => false,
-            ]);
-            $png = (new chillerlan\QRCode\QRCode($options))->render($url);
-            $decoded = (string)(new chillerlan\QRCode\QRCode)->readFromBlob($png);
+            $png = (new SeansQRCode\QRCodeRenderer(5, 4, true, 13, "logo.png"))->render($url);
+            $decoded = (string) (new chillerlan\QRCode\QRCode())->readFromBlob($png);
             if ($decoded !== $url) { fwrite(STDERR, "QR round trip failed: $decoded\n"); exit(1); }
             echo "QR round trip OK\n";
           '

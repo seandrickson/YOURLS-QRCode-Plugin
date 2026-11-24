@@ -115,6 +115,31 @@ Bonus
 
 Works with [YOURLS Case-Insensitive](https://github.com/seandrickson/YOURLS-Case-Insensitive) to generate smaller QR codes! With that plugin active, the short URL is encoded in upper case, which lets the QR code use the more compact alphanumeric mode.
 
+Development
+-----------
+
+The plugin lives in `seans-qrcode/`:
+
+- `plugin.php` is the entry point: the plugin header, options, requirement checks and the autoloader. It must stay parseable on old PHP (7.0) so it can show its "requires PHP 8.2" notice; CI checks this.
+- `hooks.php` has the YOURLS actions and filters.
+- `src/` has the classes, in the `SeansQRCode` namespace, loaded with `spl_autoload_register` (`SeansQRCode\Foo` is `src/Foo.php`).
+
+Code is checked with [Mago](https://mago.carthage.software) (formatter, linter and static analyzer), configured in `mago.toml`. The dev tools are in the `composer.json` at the root of the repository, separate from the plugin's own dependencies, and need PHP 8.4:
+
+```bash
+composer install
+```
+
+```bash
+composer install -d seans-qrcode
+```
+
+```bash
+composer check
+```
+
+`composer check` runs the format check, the linter and the analyzer, like CI does. `composer format` formats the code.
+
 Credits
 -------
 

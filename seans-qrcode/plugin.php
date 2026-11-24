@@ -1,15 +1,20 @@
 <?php
+
 /*
-Plugin Name: Sean's QR Code Short URLs
-Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
-Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
-Version: 1.5
-Author: Sean Hendrickson
-Author URI: https://github.com/seandrickson
-*/
+ * Plugin Name: Sean's QR Code Short URLs
+ * Plugin URI: https://github.com/seandrickson/YOURLS-QRCode-Plugin
+ * Description: Allows you to get the QR code by simply clicking on a button in the Admin area (or by adding <tt>.qr</tt> to the end of the keyword.) Works with <a href="https://github.com/seandrickson/YOURLS-Case-Insensitive">Case-Insensitive</a> to create smaller QR codes.
+ * Version: 1.5
+ * Author: Sean Hendrickson
+ * Author URI: https://github.com/seandrickson
+ */
+
+declare(strict_types=1);
 
 // No direct call
-if( !defined( 'YOURLS_ABSPATH' ) ) die();
+if (!defined('YOURLS_ABSPATH')) {
+    die();
+}
 
 /**
  * The following configuration constants can be overridden
@@ -18,275 +23,88 @@ if( !defined( 'YOURLS_ABSPATH' ) ) die();
  */
 
 /**
- * Define a config constant: user/config.php wins, then an environment
- * variable of the same name, then the default.
+ * The value for a config constant: an environment variable of the same name
+ * when it's set and valid, otherwise the default.
  * (Runs before the PHP version check, so keep it compatible with old PHP.)
+ *
+ * @param string   $name    the constant name, e.g. 'SEAN_QR_SCALE'
+ * @param bool|int $default the value to use when the variable isn't set or valid
+ *
+ * @return bool|int
  */
-function sean_qr_config( $name, $default ) {
-	if( defined( $name ) ) {
-		return;
-	}
-	$value = $default;
-	$env = getenv( $name );
-	if( $env !== false && $env !== '' ) {
-		if( is_bool( $default ) ) {
-			$parsed = filter_var( $env, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
-		} else {
-			$parsed = filter_var( $env, FILTER_VALIDATE_INT, array( 'flags' => FILTER_NULL_ON_FAILURE ) );
-		}
-		if( $parsed !== null ) {
-			$value = $parsed;
-		}
-	}
-	define( $name, $value );
+function sean_qr_config($name, $default)
+{
+    $env = getenv($name);
+    if (!is_string($env) || $env === '') {
+        return $default;
+    }
+    if (is_bool($default)) {
+        $parsed = filter_var($env, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    } else {
+        $parsed = filter_var($env, FILTER_VALIDATE_INT, ['flags' => FILTER_NULL_ON_FAILURE]);
+    }
+    return $parsed === null ? $default : $parsed;
 }
 
+// Each option: user/config.php wins, then the environment variable, then the default.
+
 // size of a QR code pixel (SVG, IMAGE_*), HTML -> via CSS
-sean_qr_config( 'SEAN_QR_SCALE', 5 );
+defined('SEAN_QR_SCALE') || define('SEAN_QR_SCALE', sean_qr_config('SEAN_QR_SCALE', 5));
 
 // size in QR modules, multiply with QROptions::$scale for pixel size
-sean_qr_config( 'SEAN_QR_LOGO_SPACE', 13 );
+defined('SEAN_QR_LOGO_SPACE') || define('SEAN_QR_LOGO_SPACE', sean_qr_config('SEAN_QR_LOGO_SPACE', 13));
 
 // should we include a QR code in the share boxes
-sean_qr_config( 'SEAN_QR_ADD_TO_SHAREBOX', true );
+defined('SEAN_QR_ADD_TO_SHAREBOX')
+    || define('SEAN_QR_ADD_TO_SHAREBOX', sean_qr_config('SEAN_QR_ADD_TO_SHAREBOX', true));
 
 // outside margin of QR code in 'virtual' pixels:
-sean_qr_config( 'SEAN_QR_MARGIN', 4 );
+defined('SEAN_QR_MARGIN') || define('SEAN_QR_MARGIN', sean_qr_config('SEAN_QR_MARGIN', 4));
 
 // should we place the logo (logo.png) in the middle of the QR code
-sean_qr_config( 'SEAN_QR_LOGO', true );
+defined('SEAN_QR_LOGO') || define('SEAN_QR_LOGO', sean_qr_config('SEAN_QR_LOGO', true));
 
 // should the QR Code button in the admin list always be visible,
 // or only on hover like the other action buttons
-sean_qr_config( 'SEAN_QR_BUTTON_ALWAYS_VISIBLE', true );
+defined('SEAN_QR_BUTTON_ALWAYS_VISIBLE')
+    || define('SEAN_QR_BUTTON_ALWAYS_VISIBLE', sean_qr_config('SEAN_QR_BUTTON_ALWAYS_VISIBLE', true));
 
 /*
  * Check requirements before loading anything that needs them, so a missing
  * `composer install` or an old PHP shows an admin notice instead of a fatal error.
- * (Keep the code above this check compatible with old PHP versions.)
+ * PHP parses this whole file before running the check, so keep this file
+ * parseable on PHP 7.0 (CI checks this): modern code goes in hooks.php and src/.
  */
 $sean_qr_error = '';
-if( version_compare( PHP_VERSION, '8.2', '<' ) ) {
-	$sean_qr_error = 'requires PHP 8.2 or newer (this server runs PHP ' . PHP_VERSION . ').';
-} elseif( !is_readable( __DIR__.'/vendor/autoload.php' ) ) {
-	$sean_qr_error = 'is missing its dependencies. Run <code>composer install</code> in the <code>user/plugins/seans-qrcode</code> folder.';
+if (version_compare(PHP_VERSION, '8.2', '<')) {
+    $sean_qr_error = 'requires PHP 8.2 or newer (this server runs PHP ' . PHP_VERSION . ').';
+} elseif (!is_readable(__DIR__ . '/vendor/autoload.php')) {
+    $sean_qr_error = 'is missing its dependencies. Run <code>composer install</code> in the <code>user/plugins/seans-qrcode</code> folder.';
 }
-if( $sean_qr_error ) {
-	if( function_exists( 'yourls_add_notice' ) ) {
-		yourls_add_notice( "<strong>Sean's QR Code Short URLs</strong> $sean_qr_error QR codes are disabled until this is fixed.", 'error' );
-	}
-	unset( $sean_qr_error );
-	return;
+if ($sean_qr_error) {
+    if (function_exists('yourls_add_notice')) {
+        $sean_qr_error = "<strong>Sean's QR Code Short URLs</strong> {$sean_qr_error} QR codes are disabled until this is fixed.";
+        yourls_add_notice($sean_qr_error, 'error');
+    }
+    unset($sean_qr_error);
+    return;
 }
-unset( $sean_qr_error );
+unset($sean_qr_error);
 
-require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
-//include qrcode library
-require_once( dirname(__FILE__).'/QRImageWithLogo.php' );
+// Load the plugin's own classes (SeansQRCode\Foo => src/Foo.php)
+// (no `: void` return type: that's PHP 7.1+, and this file must parse on 7.0)
+spl_autoload_register(static function (string $class) {
+    $prefix = 'SeansQRCode\\';
+    if (!str_starts_with($class, $prefix)) {
+        return;
+    }
+    $file = __DIR__ . '/src/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
 
-use chillerlan\QRCode\{QRCode, QROptions};
-use chillerlan\QRCode\Common\{EccLevel, Version};
-use chillerlan\QRCode\Data\AlphaNum;
-use chillerlan\QRCode\Output\QRGdImagePNG;
-
-// Kick in when the requested keyword is not found (e.g. 'abc.qr').
-// This hook fires before 'loader_failed', so plugins that exit on it
-// (such as Ozh's 404-if-not-found) don't prevent QR codes from being served.
-yourls_add_action( 'redirect_keyword_not_found', 'sean_yourls_qrcode' );
-function sean_yourls_qrcode( $request ) {
-	// Get authorized charset in keywords and make a regexp pattern
-	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
-
-	// if the shorturl is like bleh.qr
-	if( preg_match( "@^([$pattern]+)\.qr$@i", $request[0], $matches ) ) {
-		// if this shorturl exists...
-		$keyword = yourls_sanitize_keyword( $matches[1] );
-		if( yourls_is_shorturl( $keyword ) ) {
-
-			$url = yourls_link( $keyword );
-			$yourls_url = yourls_site_url( false );
-
-			// If Case-Insensitive plugin is enabled and YOURLS is not a sub-directory install...
-			if( yourls_is_active_plugin( 'case-insensitive/plugin.php' )
-				&& ( 'http://'.$_SERVER['HTTP_HOST'] == $yourls_url
-				||  'https://'.$_SERVER['HTTP_HOST'] == $yourls_url ) ) {
-
-				// Make the QR smaller
-				// Alphanumeric URLs have less bits/char:
-				// http://en.wikipedia.org/wiki/QR_code#Storage
-				$url = strtoupper( $url );
-			}
-
-			// the logo needs at least 3 modules (1 module border on each side)
-			$with_logo = SEAN_QR_LOGO && SEAN_QR_LOGO_SPACE > 2;
-
-			$options = new QROptions;
-
-			// pick the smallest QR version that fits the URL
-			$options->version          = Version::AUTO;
-			$options->outputBase64     = false;
-			$options->scale            = SEAN_QR_SCALE;
-			$options->imageTransparent = false;
-			$options->quietzoneSize    = SEAN_QR_MARGIN;
-
-			if( $with_logo ) {
-				// The logo hides part of the code, so use the highest error correction
-				// and a minimum version so the logo stays a small share of the code
-				// (smaller versions with a 13-module logo don't scan reliably)
-				$options->eccLevel        = EccLevel::H;
-				$options->versionMin      = 5;
-				$options->addLogoSpace    = true;
-				$options->logoSpaceWidth  = SEAN_QR_LOGO_SPACE;
-				$options->logoSpaceHeight = SEAN_QR_LOGO_SPACE;
-			} else {
-				$options->eccLevel        = EccLevel::M;
-			}
-
-			$qrcode = new QRCode($options);
-
-			// Alphanumeric mode (0-9, A-Z, space and $%*+-./:) uses fewer bits
-			// per character than byte mode, which gives a smaller QR code
-			if( AlphaNum::validateString( $url ) ) {
-				$qrcode->addAlphaNumSegment( $url );
-			} else {
-				$qrcode->addByteSegment( $url );
-			}
-
-			$matrix = $qrcode->getQRMatrix();
-
-			if( $with_logo ) {
-				// dump the output, with an additional logo
-				$png = ( new QRImageWithLogo( $options, $matrix ) )->dump( null, __DIR__.'/logo.png' );
-			} else {
-				$png = ( new QRGdImagePNG( $options, $matrix ) )->dump();
-			}
-
-			header('Content-type: image/png');
-			echo $png;
-
-			exit;
-		}
-	}
-}
-
-
-// Add our QR Code Button to the Admin interface
-yourls_add_filter( 'action_links', 'sean_add_qrcode_button' );
-function sean_add_qrcode_button( $action_links, $keyword, $url, $ip, $clicks, $timestamp ) {
-	$surl = yourls_link( $keyword );
-	$id = yourls_unique_element_id( 'qrlink' ); // used as HTML #id
-
-	// We're adding .qr to the end of the URL, right?
-	$qr = '.qr';
-	$qrlink = $surl . $qr;
-
-	// Define the QR Code
-	$qrcode = array(
-		'href'    => $qrlink,
-		'id'      => $id,
-		'title'   => 'QR Code',
-		'anchor'  => 'QR Code'
-	);
-
-	// Add our QR code generator button to the action links list
-	$action_links .= sprintf( '<a href="%s" id="%s" title="%s" class="%s">%s</a>',
-		$qrlink, $qrcode['id'], $qrcode['title'], 'button button_qrcode', $qrcode['anchor']
-	);
-
-  return $action_links;
-}
-
-
-// Add the CSS and some extra javascript to <head>
-yourls_add_action( 'html_head', 'sean_add_qrcode_css_head' );
-function sean_add_qrcode_css_head( $context ) {
-
-	// expose what page we are on
-	foreach($context as $k):
-
-		// If we are on the index page, use this css code for the button
-		if( $k == 'index' ):
-?>
-			<style type="text/css">
-				td.actions .button_qrcode {
-					margin-right: 0;
-					background: url(data:image/png;base64,R0lGODlhEAAQAIAAAAAAAP///yH5BAAAAAAALAAAAAAQABAAAAIvjI9pwIztAjjTzYWr1FrS923NAymYSV3borJW26KdaHnr6UUxd4fqL0qNbD2UqQAAOw==) no-repeat 2px 50%;
-					<?php if( SEAN_QR_BUTTON_ALWAYS_VISIBLE ): ?>
-					/* older YOURLS hides action buttons with visibility, newer with opacity + pointer-events */
-					visibility: visible !important;
-					opacity: 1 !important;
-					pointer-events: auto !important;
-					<?php endif; ?>
-				}
-			</style>
-
-			<script type="text/javascript">
-
-			jQuery(document).ready(function($) {
-				sean_add_qr_popup($('.button_qrcode'));
-				$('#main_table tbody').on("update", function() {
-					if ($('#add-button').hasClass('loading')) {
-						sean_add_qr_popup($('#main_table tbody tr:first td .button_qrcode'));
-						var id = $('#main_table tbody tr:first').attr('id').replace(/^id-/, "");
-						sean_toggle_qr(id);
-					}
-				});
-			});
-
-			function sean_add_qr_popup(el) {
-				// need to do 'off' first because adding a URL triggers this twice and we don't want two identical actions added to click
-				el.off('click').on('click', function() {
-					var NWin = window.open($(this).attr('href'), '', 'scrollbars=0,location=0,height=200,width=200');
-					if (window.focus) {
-						NWin.focus();
-					}
-					return false;
-				});
-			}
-
-			function sean_toggle_qr(id) {
-				<?php if( SEAN_QR_ADD_TO_SHAREBOX ): ?>
-					var shorturl = $('#keyword-'+id+' a:first').attr('href');
-					if (shorturl != undefined) {
-						$('#sean_qr_img').attr( 'src', shorturl.replace(/^http(s)?:\/\//, "//") + '.qr' );
-					}
-				<?php endif; ?>
-			}
-
-			</script>
-<?php
-		endif;
-	endforeach;
-}
-
-/* Displaying QR code in share box */
-if (SEAN_QR_ADD_TO_SHAREBOX) {
-    yourls_add_action( 'shareboxes_after', 'sean_add_qr_div');
-    yourls_add_filter('table_add_row_action_array', 'sean_change_share_action');
-}
-
-/* Add the extra HTML for the QR code to the share boxe */
-function sean_add_qr_div($args) {
-	$h = "h2";
-	if( defined('YOURLS_INFOS') && YOURLS_INFOS) {
-		$h = "h3";
-	}
-
-	$heading = "<$h>QR</$h>";
-	$img = !empty($args[1])?$args[1] . '.qr':'';
-	$img = yourls_match_current_protocol($img);
-?>
-	<div id="sean_qr_box" class="share">
-		<?php echo $heading; ?>
-			<img src="<?php echo $img; ?>" id="sean_qr_img" alt="QR code" width="75px" />
-	</div>
-<?php
-}
-
-/* modify the 'onclick' action for the share buttons to include toggling the QR code */
-function sean_change_share_action($actions) {
-    $id = substr($actions['share']['id'],13);
-    $actions['share']['onclick'] = "toggle_share('$id');sean_toggle_qr('$id');return false;";
-    return $actions;
-}
+// The YOURLS hooks (actions, filters and admin output)
+require_once __DIR__ . '/hooks.php';

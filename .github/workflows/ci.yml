@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  mago:
+    name: Mago (format, lint, analyze)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # the dev tools (YOURLS as a source of definitions) need PHP 8.4;
+      # mago.toml still checks the plugin code against PHP 8.2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dev tools
+        run: composer install --no-interaction --no-progress
+
+      - name: Install plugin dependencies
+        working-directory: seans-qrcode
+        run: composer install --no-interaction --no-progress
+
+      - name: Check formatting
+        run: vendor/bin/mago format --check
+
+      - name: Lint
+        run: vendor/bin/mago lint --reporting-format=github
+
+      - name: Analyze
+        run: vendor/bin/mago analyze --reporting-format=github
+
+  php-syntax:
+    name: PHP ${{ matrix.php }} syntax
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # plugin.php must parse on old PHP, so it can show its "requires PHP 8.2" notice
+          - php: '7.0'
+            files: seans-qrcode/plugin.php
+          # everything else must run on the minimum supported PHP
+          - php: '8.2'
+            files: seans-qrcode/plugin.php seans-qrcode/hooks.php seans-qrcode/src/*.php
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Check syntax
+        run: |
+          for f in ${{ matrix.files }}; do php -l "$f"; done

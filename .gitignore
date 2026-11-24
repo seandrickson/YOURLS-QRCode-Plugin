@@ -1,0 +1,4 @@
+vendor/
+seans-qrcode/vendor/
+# the release build resolves the latest compatible php-qrcode
+seans-qrcode/composer.lock
